@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+venv/
+
+# Env
+.env
+
+# PyCharm
+.idea/
+
+# Runtime data
+storage.json
