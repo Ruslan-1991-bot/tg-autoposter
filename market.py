@@ -171,28 +171,6 @@ def check_market_triggers() -> List[Dict[str, Any]]:
                     "threshold": crypto_hour,
                 })
 
-
-
-        last = _get_last_price(state, sym)
-        _set_last_price(state, sym, price)
-
-        if last is None:
-            continue
-
-        pct = _pct_change(last, price)
-        if abs(pct) >= crypto_hour:
-            last_post = _get_last_post_ts(state, sym)
-            if _now() - last_post >= cooldown_sec:
-                _set_last_post_ts(state, sym, _now())
-                events.append({
-                    "key": sym,
-                    "asset": sym.replace("USDT", ""),
-                    "market": "crypto",
-                    "price": price,
-                    "pct": pct,
-                    "threshold": crypto_hour,
-                })
-
     # --- FX (CBR daily rate, so day-window) ---
     try:
         rates = get_cbr_rates()
@@ -251,7 +229,7 @@ def check_market_triggers() -> List[Dict[str, Any]]:
                     })
     print(state.get("last_price", {}))
     _save_storage(data)
-    print(data2.get("market_state", {}).get("last_price", {}))
+    print(data.get("market_state", {}).get("last_price", {}))
     return events
 
 def update_market_ticks() -> None:
@@ -287,3 +265,14 @@ def check_market_alerts() -> Dict[str, str]:
         else:
             title = f"📊 РФ рынок: IMOEX — движение индекса"
             why = "Индекс реагирует на ожидания по ставке, отчётности, геополитику и потоки капитала."
+
+        text = (
+            f"{title}\n\n"
+            f"{direction.capitalize()}: {pct_str}\n"
+            f"Цена: {price:.2f}\n\n"
+            f"{why}\n\n"
+            f"#рынки #инвестиции"
+        )
+        alerts[e["key"]] = text
+
+    return alerts
