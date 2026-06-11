@@ -9,7 +9,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sources import fetch_rss_items
 from post_utils import is_new, mark_posted, format_post
 from analyzer import group_into_topics, filter_topics, make_topic_id, generate_ru_post
-from market import check_market_triggers
 from market import update_market_ticks, check_market_alerts
 
 
@@ -21,34 +20,7 @@ CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 
 async def job_post_news(bot: Bot):
-    print("=== MARKET CHECK START ===")
-    try:
-        events = check_market_triggers()
-        print(f"MARKET EVENTS: {len(events)}")
-    except Exception as e:
-        print(f"MARKET ERROR: {e}")
-        events = []
-
-    # 0) Market triggers (без спама — максимум 1 событие за запуск)
-    posted_market = 0
-    for ev in events:
-        direction = "вырос" if ev["pct"] > 0 else "упал"
-        pct = abs(ev["pct"])
-        text = (
-            f"📊 Сигнал рынка: {ev['asset']} {direction} на {pct:.2f}%\n\n"
-            f"Текущая цена/уровень: {ev['price']:.2f}\n"
-            f"Порог срабатывания: {ev['threshold']:.2f}%\n\n"
-            f"Что это может значить:\n"
-            f"— реакция рынка на новости/ликвидность/риск-аппетит\n"
-            f"— если движение продолжится, стоит оценить риск-менеджмент\n\n"
-            f"#рынки #инвестиции"
-        )
-        await bot.send_message(CHANNEL_ID, text)
-        posted_market += 1
-        if posted_market >= 1:
-            break
-
-    # Далее — твоя логика новостей (RSS → topics → GPT → пост)
+    # RSS → topics → GPT → пост
     items = fetch_rss_items(limit=25)
 
     model = os.getenv("OPENAI_MODEL", "gpt-4o")

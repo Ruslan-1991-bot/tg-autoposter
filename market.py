@@ -9,6 +9,7 @@ import requests
 
 STORAGE = Path("/root/tg_autoposter/market_storage.json")
 _CRYPTO_CACHE: Dict[str, Any] = {"ts": 0, "data": {}}
+_pending_events: List[Dict[str, Any]] = []
 
 
 def _load_storage() -> Dict[str, Any]:
@@ -145,7 +146,6 @@ def check_market_triggers() -> List[Dict[str, Any]]:
     for sym in ["BTCUSDT", "ETHUSDT"]:
         try:
             price = float(get_binance_price(sym))
-            print(f"✅ CRYPTO OK {sym} price={price}")
         except Exception as e:
             print(f"⚠️ CRYPTO FETCH FAIL {sym}: {repr(e)}")
             continue
@@ -227,24 +227,22 @@ def check_market_triggers() -> List[Dict[str, Any]]:
                         "pct": pct,
                         "threshold": moex_day,
                     })
-    print(state.get("last_price", {}))
     _save_storage(data)
-    print(data.get("market_state", {}).get("last_price", {}))
     return events
 
 def update_market_ticks() -> None:
-    """
-    Совместимость с планом: обновляет цены/состояние.
-    Фактически — прогоняет check_market_triggers() без публикации.
-    """
-    check_market_triggers()
+    global _pending_events
+    _pending_events = check_market_triggers()
+    print(f"[market] tick: {len(_pending_events)} event(s)")
 
 
 def check_market_alerts() -> Dict[str, str]:
     """
     Возвращает готовые сообщения для постинга: {event_key: text}
     """
-    events = check_market_triggers()
+    global _pending_events
+    events = _pending_events
+    _pending_events = []
     alerts: Dict[str, str] = {}
 
     for e in events:
