@@ -16,3 +16,4 @@ venv/
 
 # Runtime data
 storage.json
+market_storage.json
