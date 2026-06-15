@@ -188,6 +188,24 @@ def _text_of_topic(topic: List[Dict]) -> str:
     return (" ".join(parts)).lower()
 
 
+SANCTION_MARKET = [
+    "oil", "gas", "export", "import", "bank", "payment", "swift",
+    "energy", "pipeline", "trade", "currency", "company", "sector",
+    "bond", "stock", "market", "crypto",
+    "нефт", "газ", "экспорт", "импорт", "банк", "платеж", "свифт",
+    "энергетик", "трубопровод", "торговл", "валют", "компани",
+    "сектор", "облигац", "акци", "рынок", "крипт", "рубл",
+]
+
+SANCTION_PERSONAL = [
+    "official", "diplomat", "politician", "minister",
+    "culture", "art", "museum", "charity", "ngo", "athlete", "sport",
+    "чиновник", "дипломат", "политик", "министр",
+    "культур", "искусств", "музей", "благотворител", "нко",
+    "спортсмен", "спорт",
+]
+
+
 def topic_score(topic: List[Dict]) -> int:
     """
     Редакторский скоринг: чем выше — тем важнее для инвесторов/бизнеса.
@@ -245,6 +263,13 @@ def topic_score(topic: List[Dict]) -> int:
     # 5) Если тема подтверждена несколькими источниками — плюс к весу
     # (у тебя 2–3 источника на тему — это уже редакционный сигнал)
     score += max(0, len(topic) - 1)
+
+    # Санкции без рыночного контекста — штраф
+    if any(k in text for k in ["санкц", "sanction"]):
+        has_market = any(k in text for k in SANCTION_MARKET)
+        has_personal = any(k in text for k in SANCTION_PERSONAL)
+        if has_personal and not has_market:
+            score -= 3
 
     return score
 
